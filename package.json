@@ -1,0 +1,23 @@
+{
+  "name": "hexo-deployer-tencent",
+  "version": "1.0.3",
+  "description": "A Hexo deployer plugin for uploading files to Tencent COS and refreshing CDN. | 一个用于将文件上传到腾讯COS和刷新CDN的Hexo部署器插件。",
+  "main": "index.js",
+  "author": "inkss",
+  "homepage": "https://github.com/inkss/hexo-deployer-tencent/",
+  "keywords": ["hexo", "deployer", "tencent-cos", "cdn"],
+  "license": "MIT",
+  "dependencies": {
+    "cos-nodejs-sdk-v5": "^2.11.0",
+    "tencentcloud-sdk-nodejs-common": "^4.0.0",
+    "p-limit": "^3.1.0",
+    "retry": "^0.13.1"
+  },
+  "peerDependencies": {
+    "hexo": ">=6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/inkss/hexo-deployer-tencent.git"
+  }
+}
