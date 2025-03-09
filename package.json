@@ -1,6 +1,6 @@
 {
   "name": "hexo-deployer-tencent",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "A Hexo deployer plugin for uploading files to Tencent COS and refreshing CDN. | 一个用于将文件上传到腾讯COS和刷新CDN的Hexo部署器插件。",
   "main": "index.js",
   "author": "inkss",
