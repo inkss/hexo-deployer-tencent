@@ -40,15 +40,15 @@ deploy:
   upload_dir: public  # 默认上传 Hexo 的 public 目录
   cdn_domains:
       - domain: https://static.example.com
-        ignore_paths: []
+        ignore_extensions: ['.html']
       - domain: https://example.com
-        ignore_paths: ['/js', '/css', '/img/demo/']
+        ignore_paths: ['/js', '/css', '/img']
   remove_remote_files: true  # 是否删除 COS 中多余的远程文件
   refresh_index_page: true  # 是否将 index.html 刷新为根路径
   concurrency: 10  # 腾讯云 API 并发数
 ```
 
-`cdn_domains` 支持配置多个域名，适用于一个存储桶绑定多个自定义域名的场景，可通过 `ignore_paths` 灵活指定 CDN 刷新时需要过滤的目录。
+`cdn_domains` 支持配置多个域名，适用于一个存储桶绑定多个自定义域名的场景，可通过 `ignore_paths` 和 `ignore_extensions` 灵活指定 CDN 刷新时需要过滤的目录或文件格式。
 
 ## 属性说明
 
@@ -61,7 +61,8 @@ deploy:
 | `upload_dir`        | String  | 是       | 无     | 本地上传目录，相对于 Hexo 根目录，通常为 `public`。          |
 | `cdn_domains`       | Array   | 否       | `[]`   | CDN 加速域名列表，每项可包含 `ignore_paths`，未设置则不刷新 CDN。 |
 | `cdn_domains.domain` | String | 是 | 无 | 加速域名，以 `https://` 或 `http://` 开头。 |
-| `cdn_domains.ignore_paths` | Array | 否 | 无 | 加速域名的忽略路径，支持多个相对（`upload_dir`）路径。 |
+| `cdn_domains.ignore_paths` | Array | 否 | 无 | 忽略路径，支持多个相对（`upload_dir`）路径。 |
+| `cdn_domains.ignore_extensions` | Array | 否 | 无 | 忽略格式，例：['.html', '.txt']。 |
 | `remove_remote_files` | Boolean | 否    | `false` | 是否删除 COS 中不在本地文件列表中的远程文件。                |
 | `refresh_index_page`  | Boolean | 否    | `false` | 是否将 `index.html` 的 CDN 刷新 URL 转换为根路径（例如 `/`）。 |
 | `concurrency`       | Number  | 否       | `10`   | 文件上传和 CDN 刷新的并发数，受限于腾讯云 API 并发限制。      |
