@@ -74,9 +74,9 @@ deploy:
 - **路径处理**：`upload_dir` 是相对于 Hexo 项目根目录的路径，通常应设置为 `public`。
 - **永久链接**：当永久链接中去除尾部的 `index.html` 时，CDN 刷新缓存时应刷新 `/` 而非 `/index.html`。
 
-## 处理流程
+## 处理模块
 
-![处理流程](https://github.com/inkss/hexo-deployer-tencent/blob/main/img/export.svg)
+![处理模块](https://github.com/inkss/hexo-deployer-tencent/blob/main/img/export.svg)
 
 ## 许可证
 
