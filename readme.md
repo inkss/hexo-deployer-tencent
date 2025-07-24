@@ -60,21 +60,30 @@ deploy:
 | `bucket`            | String  | 是       | 无     | 腾讯云 COS 的存储桶名称，例如 `my-bucket-1250000000`。       |
 | `region`            | String  | 是       | 无     | 存储桶所在区域，例如 `ap-guangzhou`。                        |
 | `upload_dir`        | String  | 是       | 无     | 本地上传目录，相对于 Hexo 根目录，通常为 `public`。          |
-| `cache_type` | String | 否 | `cdn` |  |
+| `cache_type`        | String  | 否       | `cdn`  | 刷新类型，支持 `cdn`（默认值）和 `edgeone`。 |
 | `cdn_domains`       | Array   | 否       | `[]`   | 加速域名列表，每项可包含 `ignore_paths`，未设置则不刷新缓存。 |
-| `cdn_domains.domain` | String | 是 | 无 | 加速域名，以 `https://` 或 `http://` 开头。 |
-| `cdn_domains.ignore_paths` | Array | 否 | 无 | 忽略路径，支持多个相对（`upload_dir`）路径。 |
-| `cdn_domains.ignore_extensions` | Array | 否 | 无 | 忽略格式，例：['.html', '.txt']。 |
+| `cdn_domains.domain`  | String  | 是 | 无 | 加速域名，以 `https://` 或 `http://` 开头。 |
+| `cdn_domains.ignore_paths`      | Array | 否 | 无 | 忽略路径[^1]，支持多个相对（`upload_dir`）路径。 |
+| `cdn_domains.ignore_extensions` | Array | 否 | 无 | 忽略格式[^2]，例：['.html', '.txt']。 |
 | `remove_remote_files` | Boolean | 否    | `false` | 是否删除 COS 中不在本地文件列表中的远程文件。                |
 | `refresh_index_page`  | Boolean | 否    | `false` | 是否将 `index.html` 的刷新 URL 转换为根路径（例如 `/`）。 |
-| `concurrency`       | Number  | 否       | `10`   | 文件上传和缓存刷新的并发数，受限于腾讯云 API 并发限制。    |
+| `concurrency`         | Number  | 否    | `10`    | 文件上传和缓存刷新的并发数，受限于腾讯云 API 并发限制。    |
 
 ### 注意事项
 
 - **必填项**：`secret_id`、`secret_key`、`bucket`、`region` 和 `upload_dir` 是必须提供的。
 - **可选项**：未设置的可选项将使用默认值，默认行为是上传文件但不删除远程文件或刷新缓存。
+- **刷新类型**：`cdn` 按照 `url` 刷新；`edgeone` 免费版按照 `hostname` 刷新[^3]，其它按照 `url` 刷新。
 - **路径处理**：`upload_dir` 是相对于 Hexo 项目根目录的路径，通常应设置为 `public`。
 - **永久链接**：当永久链接中去除尾部的 `index.html` 时，刷新缓存时应刷新 `/` 而非 `/index.html`。
+
+------
+
+[^1]: 对于指定路径（如 `/fonts`）下的请求地址，即使目录中的文件发生变更，也不会触发缓存刷新。
+
+[^2]: 对于特定文件格式（如 `*.css`），请求地址将不触发缓存刷新，即使文件内容已发生变更。
+
+[^3]: 当待刷新链接未超过配额时，优先按 URL 进行刷新（清除缓存）；一旦超出配额，则按 Hostname 执行刷新（标记过期）。
 
 ## 工作流程
 
