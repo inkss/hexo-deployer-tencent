@@ -19,5 +19,8 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/inkss/hexo-deployer-tencent.git"
+  },
+  "scripts": {
+    "debug": "node lib/debug_deployer.js"
   }
 }
