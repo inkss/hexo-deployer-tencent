@@ -47,6 +47,7 @@ deploy:
   remove_remote_files: true  # 是否删除 COS 中多余的远程文件
   refresh_index_page: true  # 是否将 index.html 刷新为根路径
   concurrency: 10  # 腾讯云 API 并发数
+  enable_log: false  # 是否打印日志
 ```
 
 `cdn_domains` 支持配置多个域名，适用于一个存储桶绑定多个自定义域名的场景，可通过 `ignore_paths` 和 `ignore_extensions` 灵活指定刷新时需要过滤的目录或文件格式。
@@ -68,6 +69,7 @@ deploy:
 | `remove_remote_files` | Boolean | 否    | `false` | 是否删除 COS 中不在本地文件列表中的远程文件。                |
 | `refresh_index_page`  | Boolean | 否    | `false` | 是否将 `index.html` 的刷新 URL 转换为根路径（例如 `/`）。 |
 | `concurrency`         | Number  | 否    | `10`    | 文件上传和缓存刷新的并发数，受限于腾讯云 API 并发限制。    |
+| `enable_log`          | Boolean | 否    | `false` | 是否打印日志信息，默认不打印。                              |
 
 ### 注意事项
 
