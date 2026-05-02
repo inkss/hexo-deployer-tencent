@@ -96,3 +96,6 @@ npm/
 
 # Windows files
 Thumbs.db
+
+# Debug test files
+public/

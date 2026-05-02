@@ -27,6 +27,7 @@
     "url": "git+https://github.com/inkss/hexo-deployer-tencent.git"
   },
   "scripts": {
+    "debug": "node lib/debug_deployer.js",
     "test": "node --test test/deployer.test.js"
   }
 }
