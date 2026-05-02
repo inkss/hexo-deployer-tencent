@@ -16,8 +16,8 @@
   "license": "MIT",
   "dependencies": {
     "cos-nodejs-sdk-v5": "^2.15.4",
-    "tencentcloud-sdk-nodejs-common": "^4.1.220",
-    "p-limit": "^5.0.0"
+    "p-limit": "^3.1.0",
+    "tencentcloud-sdk-nodejs-common": "^4.1.220"
   },
   "peerDependencies": {
     "hexo": ">=6.0.0"
