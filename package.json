@@ -10,8 +10,7 @@
   "dependencies": {
     "cos-nodejs-sdk-v5": "^2.15.4",
     "tencentcloud-sdk-nodejs-common": "^4.1.220",
-    "p-limit": "^7.3.0",
-    "retry": "^0.13.1"
+    "p-limit": "^5.0.0"
   },
   "peerDependencies": {
     "hexo": ">=6.0.0"
@@ -21,6 +20,6 @@
     "url": "git+https://github.com/inkss/hexo-deployer-tencent.git"
   },
   "scripts": {
-    "debug": "node lib/debug_deployer.js"
+    "test": "node --test test/deployer.test.js"
   }
 }

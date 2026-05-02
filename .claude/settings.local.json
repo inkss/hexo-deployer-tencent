@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "Bash(*)",
+      "PowerShell(*)",
+      "TodoWrite",
+      "Skill",
+      "Agent",
+      "CronCreate",
+      "CronDelete",
+      "CronList",
+      "ScheduleWakeup",
+      "TaskOutput",
+      "TaskStop",
+      "NotebookRead"
+    ],
+    "deny": []
+  }
+}

@@ -54,67 +54,64 @@ deploy:
 
 ## 属性说明
 
-| 属性名              | 类型    | 是否必填 | 默认值 | 描述                                                         |
-| ------------------- | ------- | -------- | ------ | ------------------------------------------------------------ |
-| `secret_id`         | String  | 是       | 无     | 腾讯云 API 的 Secret ID，用于身份验证。                      |
-| `secret_key`        | String  | 是       | 无     | 腾讯云 API 的 Secret Key，用于身份验证。                     |
-| `bucket`            | String  | 是       | 无     | 腾讯云 COS 的存储桶名称，例如 `my-bucket-1250000000`。       |
-| `region`            | String  | 是       | 无     | 存储桶所在区域，例如 `ap-guangzhou`。                        |
-| `upload_dir`        | String  | 是       | 无     | 本地上传目录，相对于 Hexo 根目录，通常为 `public`。          |
-| `cache_type`        | String  | 否       | `cdn`  | 刷新类型，支持 `cdn`（默认值）和 `edgeone`。 |
-| `cdn_domains`       | Array   | 否       | `[]`   | 加速域名列表，每项可包含 `ignore_paths`，未设置则不刷新缓存。 |
-| `cdn_domains.domain`  | String  | 是 | 无 | 加速域名，以 `https://` 或 `http://` 开头。 |
-| `cdn_domains.ignore_paths`      | Array | 否 | 无 | 忽略路径[^1]，支持多个相对（`upload_dir`）路径。 |
-| `cdn_domains.ignore_extensions` | Array | 否 | 无 | 忽略格式[^2]，例：['.html', '.txt']。 |
-| `remove_remote_files` | Boolean | 否    | `false` | 是否删除 COS 中不在本地文件列表中的远程文件。                |
-| `refresh_index_page`  | Boolean | 否    | `false` | 是否将 `index.html` 的刷新 URL 转换为根路径（例如 `/`）。 |
-| `concurrency`         | Number  | 否    | `10`    | 文件上传和缓存刷新的并发数，受限于腾讯云 API 并发限制。    |
-| `enable_log`          | Boolean | 否    | `false` | 是否打印日志信息，默认不打印。                              |
+### 基础配置
+
+| 属性名 | 类型 | 是否必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `secret_id` | String | 是 | - | 腾讯云 API Secret ID |
+| `secret_key` | String | 是 | - | 腾讯云 API Secret Key |
+| `bucket` | String | 是 | - | COS 存储桶名称，如 `my-bucket-1250000000` |
+| `region` | String | 是 | - | 存储桶所在区域，如 `ap-guangzhou` |
+| `upload_dir` | String | 是 | - | 本地上传目录（相对于 Hexo 根目录），通常为 `public` |
+| `concurrency` | Number | 否 | `10` | 并发数，取值范围 1~50 |
+| `enable_log` | Boolean | 否 | `false` | 是否打印日志 |
+
+### 缓存刷新配置
+
+| 属性名 | 类型 | 是否必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `cache_type` | String | 否 | `cdn` | 刷新类型：`cdn` 或 `edgeone` |
+| `cdn_domains` | Array | 否 | `[]` | 加速域名列表，未设置则不刷新缓存 |
+| `remove_remote_files` | Boolean | 否 | `false` | 是否删除 COS 中多余的远程文件 |
+| `refresh_index_page` | Boolean | 否 | `false` | 是否将 `*/index.html` 转换为 `*/` 进行刷新 |
+
+### cdn_domains 子属性
+
+| 属性名 | 类型 | 是否必填 | 说明 |
+| --- | --- | --- | --- |
+| `domain` | String | 是 | 加速域名，以 `http://` 或 `https://` 开头 |
+| `ignore_paths` | Array | 否 | 忽略的相对路径[^1]，如 `['/js', '/css']` |
+| `ignore_extensions` | Array | 否 | 忽略的文件扩展名[^2]，如 `['.html', '.txt']` |
 
 ### 注意事项
 
-- **必填项**：`secret_id`、`secret_key`、`bucket`、`region` 和 `upload_dir` 是必须提供的。
-- **可选项**：未设置的可选项将使用默认值，默认行为是上传文件但不删除远程文件或刷新缓存。
-- **刷新类型**：`cdn` 按照 `url` 刷新；`edgeone` 免费版按照 `hostname` 刷新[^3]，其它按照 `url` 刷新。
-- **路径处理**：`upload_dir` 是相对于 Hexo 项目根目录的路径，通常应设置为 `public`。
-- **永久链接**：当永久链接中去除尾部的 `index.html` 时，刷新缓存时应刷新 `/` 而非 `/index.html`。
+- 默认行为是上传变更文件但不删除远程文件、不刷新缓存。
+- `cdn` 按 URL 刷新；`edgeone` 免费版配额不足时按 Hostname 刷新[^3]，其它按 URL 刷新。
+- `refresh_index_page` 不影响根目录 `index.html`（始终刷新为 `/index.html`）。
 
 ## 工作流程
 
-- **Hexo 部署插件注册**  
-  - `hexo.extend.deployer.register`：注册 Hexo 部署插件。
-
-- **Hexo 部署插件**  
-  - **部署入口**：处理部署主逻辑。
-  - **主要入口**：`main` - 协调部署任务，同步和刷新。
-  - `changedFiles` - 记录变更文件，记录变更文件并进行部署。
-
-- **部署入口**  
-  - **缓存管理**：管理节点缓存。
-    - `purgeCdnCache` - 刷新 CDN 缓存。
-    - `purgeEdgeoneCache` - 刷新 EdgeOne 缓存。
-  - **核心流程**：执行核心部署流程。
-    - **核心流程**：处理核心部署逻辑。
-      - **配置管理**：管理配置。
-        - `validateConfig` - 校验部署配置，校验并部署配置。
-      - **初始化客户端**：初始化 COS 和 CDN 客户端。
-        - `initClients` - 初始化 COS 和 CDN 实例。
-      - **计算 MD5**：计算文件 MD5。
-        - `calculateMD5` - 计算文件哈希值。
-      - **获取文件**：获取文件列表。
-        - `getFiles` - 递归获取本地文件。
-        - `listCosFiles` - 获取 COS 文件列表。
-      - **上传文件**：上传文件到 COS。
-        - `uploadFile` - 上传文件到 COS。
-      - **删除 COS 文件**：删除 COS 文件。
-        - `deleteCosFiles` - 删除多余或不再需要的文件。
+```text
+hexo deploy
+  └─ validateConfig    校验配置
+  └─ initClients       初始化 COS / CDN / EdgeOne 客户端
+  └─ main
+       ├─ getFiles            递归获取本地文件列表
+       ├─ calculateMD5        流式计算文件 MD5
+       ├─ headObject + 比对   与远程 ETag 对比，跳过未变更文件
+       ├─ uploadFile          上传变更文件（带重试）
+       ├─ deleteCosFiles      删除远程多余文件（分批 + 重试）
+       └─ 缓存刷新
+            ├─ purgeCdnCache       CDN：按 URL 批量刷新（带重试）
+            └─ purgeEdgeOneCache   EdgeOne：按 URL 或 Hostname 刷新
+```
 
 ## 许可证
 
 MIT License
 
-[^1]: 对于指定路径（如 `/fonts`）下的请求地址，即使目录中的文件发生变更，也不会触发缓存刷新。
+[^1]: 指定路径下的文件即使发生变更，也不会触发缓存刷新。
 
-[^2]: 对于特定文件格式（如 `*.css`），请求地址将不触发缓存刷新，即使文件内容已发生变更。
+[^2]: 指定扩展名的文件即使发生变更，也不会触发缓存刷新。
 
-[^3]: 当待刷新链接未超过配额时，优先按 URL 进行刷新（清除缓存）；一旦超出配额，则按 Hostname 执行刷新（标记过期）。
+[^3]: 当待刷新 URL 数量超出每日剩余配额时，回退为按 Hostname 刷新（标记缓存过期）。
