@@ -288,41 +288,159 @@ describe('withRetry', () => {
 
 describe('buildPurgeUrls', () => {
 
-  it('普通文件生成正确 URL', () => {
-    const config = {
-      cdnDomains: [{ domain: 'https://example.com', ignorePaths: [], ignoreExtensions: [] }],
-      refreshIndexPage: false
-    };
-    const urls = _buildPurgeUrls(['css/style.css', 'js/app.js'], config);
-    assert.deepEqual(urls, ['https://example.com/css/style.css', 'https://example.com/js/app.js']);
+  const domain = (d = 'https://example.com') => ({
+    cdnDomains: [{ domain: d, ignorePaths: [], ignoreExtensions: [] }],
+    refreshIndexPage: false
+  });
+  const refresh = (d = 'https://example.com') => ({
+    cdnDomains: [{ domain: d, ignorePaths: [], ignoreExtensions: [] }],
+    refreshIndexPage: true
   });
 
-  it('根目录 index.html 映射为 /index.html', () => {
-    const config = {
-      cdnDomains: [{ domain: 'https://example.com', ignorePaths: [], ignoreExtensions: [] }],
-      refreshIndexPage: false
-    };
-    const urls = _buildPurgeUrls(['index.html'], config);
+  // ---------- 非 index.html 文件 ----------
+
+  it('普通静态文件生成正确 URL', () => {
+    const urls = _buildPurgeUrls(['css/style.css', 'js/app.js', 'img/logo.png'], domain());
+    assert.deepEqual(urls, [
+      'https://example.com/css/style.css',
+      'https://example.com/js/app.js',
+      'https://example.com/img/logo.png'
+    ]);
+  });
+
+  it('非 index 的 html 文件保持原路径', () => {
+    const urls = _buildPurgeUrls(['post.html', 'page.html', '404.html'], domain());
+    assert.deepEqual(urls, [
+      'https://example.com/post.html',
+      'https://example.com/page.html',
+      'https://example.com/404.html'
+    ]);
+  });
+
+  it('子目录下非 index 的 html 文件保持原路径', () => {
+    const urls = _buildPurgeUrls(['archives/2024.html', 'tags/hexo.html'], domain());
+    assert.deepEqual(urls, [
+      'https://example.com/archives/2024.html',
+      'https://example.com/tags/hexo.html'
+    ]);
+  });
+
+  // ---------- 根目录 index.html ----------
+
+  it('refreshIndexPage=false 时根目录 index.html 映射为 /index.html', () => {
+    const urls = _buildPurgeUrls(['index.html'], domain());
     assert.deepEqual(urls, ['https://example.com/index.html']);
   });
 
-  it('refresh_index_page 时 about/index.html → about/', () => {
-    const config = {
-      cdnDomains: [{ domain: 'https://example.com', ignorePaths: [], ignoreExtensions: [] }],
-      refreshIndexPage: true
-    };
-    const urls = _buildPurgeUrls(['about/index.html'], config);
+  it('refreshIndexPage=true 时根目录 index.html 映射为 /', () => {
+    const urls = _buildPurgeUrls(['index.html'], refresh());
+    assert.deepEqual(urls, ['https://example.com/']);
+  });
+
+  // ---------- 子目录 index.html ----------
+
+  it('refreshIndexPage=false 时子目录 index.html 保持原路径', () => {
+    const urls = _buildPurgeUrls(['about/index.html', 'blog/index.html'], domain());
+    assert.deepEqual(urls, [
+      'https://example.com/about/index.html',
+      'https://example.com/blog/index.html'
+    ]);
+  });
+
+  it('refreshIndexPage=true 时子目录 index.html 转为目录路径', () => {
+    const urls = _buildPurgeUrls(['about/index.html', 'blog/index.html'], refresh());
+    assert.deepEqual(urls, [
+      'https://example.com/about/',
+      'https://example.com/blog/'
+    ]);
+  });
+
+  it('refreshIndexPage=true 时深层嵌套 index.html 转为目录路径', () => {
+    const urls = _buildPurgeUrls(['blog/2024/01/index.html', 'docs/api/v2/index.html'], refresh());
+    assert.deepEqual(urls, [
+      'https://example.com/blog/2024/01/',
+      'https://example.com/docs/api/v2/'
+    ]);
+  });
+
+  // ---------- 混合场景：一次调用包含多种文件类型 ----------
+
+  it('refreshIndexPage=true 混合文件：根 index + 子 index + 普通 html + 静态资源', () => {
+    const files = [
+      'index.html',                    // → /
+      'about/index.html',              // → about/
+      'archives/index.html',           // → archives/
+      'post.html',                     // → post.html（不变）
+      'css/style.css',                 // → css/style.css（不变）
+      'js/app.js',                     // → js/app.js（不变）
+      'img/photo.jpg'                  // → img/photo.jpg（不变）
+    ];
+    const urls = _buildPurgeUrls(files, refresh());
+    assert.deepEqual(urls, [
+      'https://example.com/',
+      'https://example.com/about/',
+      'https://example.com/archives/',
+      'https://example.com/post.html',
+      'https://example.com/css/style.css',
+      'https://example.com/js/app.js',
+      'https://example.com/img/photo.jpg'
+    ]);
+  });
+
+  it('refreshIndexPage=false 混合文件：所有路径保持原样', () => {
+    const files = [
+      'index.html',
+      'about/index.html',
+      'post.html',
+      'css/style.css'
+    ];
+    const urls = _buildPurgeUrls(files, domain());
+    assert.deepEqual(urls, [
+      'https://example.com/index.html',
+      'https://example.com/about/index.html',
+      'https://example.com/post.html',
+      'https://example.com/css/style.css'
+    ]);
+  });
+
+  // ---------- 内容变动 vs 不变：changedFiles 只包含变动文件 ----------
+
+  it('仅内容变动的文件出现在刷新列表中', () => {
+    // 模拟：index.html 和 style.css 内容变动，其他文件未变
+    const changedFiles = ['index.html', 'css/style.css'];
+    const urls = _buildPurgeUrls(changedFiles, domain());
+    assert.deepEqual(urls, [
+      'https://example.com/index.html',
+      'https://example.com/css/style.css'
+    ]);
+  });
+
+  it('仅一个文件变动时只刷新该文件的 URL', () => {
+    const urls = _buildPurgeUrls(['about/index.html'], refresh());
     assert.deepEqual(urls, ['https://example.com/about/']);
   });
 
-  it('refresh_index_page 不影响根目录 index.html', () => {
-    const config = {
-      cdnDomains: [{ domain: 'https://example.com', ignorePaths: [], ignoreExtensions: [] }],
-      refreshIndexPage: true
-    };
-    const urls = _buildPurgeUrls(['index.html'], config);
-    assert.deepEqual(urls, ['https://example.com/index.html']);
+  // ---------- 文件重命名场景：删除旧 key + 上传新 key ----------
+
+  it('重命名后旧文件名不应出现在刷新列表（新文件名应出现）', () => {
+    // 模拟：post-2024-01-01.html 被重命名为 post-2024-01-02.html
+    // changedFiles 只包含新文件
+    const changedFiles = ['post-2024-01-02.html'];
+    const urls = _buildPurgeUrls(changedFiles, domain());
+    assert.deepEqual(urls, ['https://example.com/post-2024-01-02.html']);
+    // 旧文件 post-2024-01-01.html 不在列表中，不会被 CDN 刷新
+    // 远端删除由 remove_remote_files 逻辑处理
+    assert.ok(!urls.some(u => u.includes('post-2024-01-01')));
   });
+
+  it('重命名 index.html 子目录场景', () => {
+    // 模拟：blog/old-slug/index.html → blog/new-slug/index.html
+    const changedFiles = ['blog/new-slug/index.html'];
+    const urls = _buildPurgeUrls(changedFiles, refresh());
+    assert.deepEqual(urls, ['https://example.com/blog/new-slug/']);
+  });
+
+  // ---------- ignore_paths / ignore_extensions ----------
 
   it('ignore_paths 过滤匹配的文件', () => {
     const config = {
@@ -333,6 +451,16 @@ describe('buildPurgeUrls', () => {
     assert.deepEqual(urls, ['https://example.com/css/style.css']);
   });
 
+  it('ignore_paths 匹配精确目录名不会误匹配前缀相同的目录', () => {
+    const config = {
+      cdnDomains: [{ domain: 'https://example.com', ignorePaths: ['img'], ignoreExtensions: [] }],
+      refreshIndexPage: false
+    };
+    // 'img' 在 ignorePaths 中，'images' 不应被过滤
+    const urls = _buildPurgeUrls(['img/logo.png', 'images/banner.jpg'], config);
+    assert.deepEqual(urls, ['https://example.com/images/banner.jpg']);
+  });
+
   it('ignore_extensions 过滤匹配的扩展名', () => {
     const config = {
       cdnDomains: [{ domain: 'https://example.com', ignorePaths: [], ignoreExtensions: ['.png', '.jpg'] }],
@@ -341,6 +469,20 @@ describe('buildPurgeUrls', () => {
     const urls = _buildPurgeUrls(['image.png', 'photo.jpg', 'style.css'], config);
     assert.deepEqual(urls, ['https://example.com/style.css']);
   });
+
+  it('ignore_paths + ignore_extensions 同时生效', () => {
+    const config = {
+      cdnDomains: [{ domain: 'https://example.com', ignorePaths: ['vendor'], ignoreExtensions: ['.map'] }],
+      refreshIndexPage: false
+    };
+    const urls = _buildPurgeUrls(['vendor/lib.js', 'js/app.js.map', 'js/app.js', 'index.html'], config);
+    assert.deepEqual(urls, [
+      'https://example.com/js/app.js',
+      'https://example.com/index.html'
+    ]);
+  });
+
+  // ---------- 多域名 ----------
 
   it('多域名为每个域名生成 URL', () => {
     const config = {
@@ -357,12 +499,45 @@ describe('buildPurgeUrls', () => {
     ]);
   });
 
-  it('空文件列表返回空数组', () => {
+  it('多域名 + refreshIndexPage 对每个域名都生效', () => {
     const config = {
-      cdnDomains: [{ domain: 'https://example.com', ignorePaths: [], ignoreExtensions: [] }],
+      cdnDomains: [
+        { domain: 'https://example.com', ignorePaths: [], ignoreExtensions: [] },
+        { domain: 'https://cdn.example.com', ignorePaths: [], ignoreExtensions: [] }
+      ],
+      refreshIndexPage: true
+    };
+    const urls = _buildPurgeUrls(['index.html', 'about/index.html'], config);
+    assert.deepEqual(urls, [
+      'https://example.com/',
+      'https://example.com/about/',
+      'https://cdn.example.com/',
+      'https://cdn.example.com/about/'
+    ]);
+  });
+
+  // ---------- 边界情况 ----------
+
+  it('空文件列表返回空数组', () => {
+    const urls = _buildPurgeUrls([], domain());
+    assert.deepEqual(urls, []);
+  });
+
+  it('所有文件都被 ignore_paths 过滤时返回空数组', () => {
+    const config = {
+      cdnDomains: [{ domain: 'https://example.com', ignorePaths: ['css', 'js'], ignoreExtensions: [] }],
       refreshIndexPage: false
     };
-    const urls = _buildPurgeUrls([], config);
+    const urls = _buildPurgeUrls(['css/style.css', 'js/app.js'], config);
+    assert.deepEqual(urls, []);
+  });
+
+  it('所有文件都被 ignore_extensions 过滤时返回空数组', () => {
+    const config = {
+      cdnDomains: [{ domain: 'https://example.com', ignorePaths: [], ignoreExtensions: ['.css', '.js'] }],
+      refreshIndexPage: false
+    };
+    const urls = _buildPurgeUrls(['style.css', 'app.js'], config);
     assert.deepEqual(urls, []);
   });
 });
