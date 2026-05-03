@@ -1,5 +1,8 @@
 .claude/
+.env
+.env.*
 test/
 public/
 lib/debug_deployer.js
 .gitignore
+.npmignore
