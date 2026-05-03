@@ -14,6 +14,10 @@
     "hexo-plugin"
   ],
   "license": "MIT",
+  "files": [
+    "index.js",
+    "lib/deployer.js"
+  ],
   "dependencies": {
     "cos-nodejs-sdk-v5": "^2.15.4",
     "p-limit": "^6.2.0",
